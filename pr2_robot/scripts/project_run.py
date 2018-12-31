@@ -55,7 +55,7 @@ def pcl_callback(pcl_msg):
     cloud = ros_to_pcl(pcl_msg)
     
     # TODO: Statistical Outlier Filtering
-    # Much like the previous filters, we start by creating a filter object: 
+    # creating a statistical outlier filter object for reducing noise
     outlier_filter = cloud.make_statistical_outlier_filter()
 
     # Set the number of neighboring points to analyze for any given point
@@ -67,7 +67,7 @@ def pcl_callback(pcl_msg):
     # Any point with a mean distance larger than global (mean distance+x*std_dev) will be considered outlier
     outlier_filter.set_std_dev_mul_thresh(x)
 
-    # Finally call the filter function for magic
+    # Finally call the filter function
     cloud_filtered = outlier_filter.filter()
 
     # TODO: Voxel Grid Downsampling
@@ -255,7 +255,7 @@ def pr2_mover(object_list):
     for i in range(len(object_list_param)):
 
         OBJECT_NAME.data = object_list_param[i]['name']
-        TEST_SCENE_NUM.data = 1
+        TEST_SCENE_NUM.data = 3
 
         obj_idx = labels.index(object_list_param[i]['name'])
         if(obj_idx == -1):
@@ -301,7 +301,7 @@ def pr2_mover(object_list):
             print "Service call failed: %s"%e
 
     # TODO: Output your request parameters into output yaml file
-    send_to_yaml('src/RoboND-Perception-Project/pr2_robot/config/output_1.yaml',dict_list)
+    send_to_yaml('src/RoboND-Perception-Project/pr2_robot/config/output_3.yaml',dict_list)
     print('yaml file saved')
 
 
