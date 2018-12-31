@@ -32,25 +32,102 @@ The first step in solving this project is to filter out all other points and obt
 The various steps to achieve this is listed out below:
 - Statistical Outlier Filtering
 This step involves removing the noise as much as possible from the environment. This filter looks in the neighborhoo and removes points that does not meet a certain criteria.
-```py
-# creating a statistical outlier filter object for reducing noise
-outlier_filter = cloud.make_statistical_outlier_filter()
+    ```py
+    # creating a statistical outlier filter object for reducing noise
+    outlier_filter = cloud.make_statistical_outlier_filter()
+    
+    # Set the number of neighboring points to analyze for any given point
+    outlier_filter.set_mean_k(10)
+    
+    # Set threshold scale factor
+    x = 0.5
+    
+    # Any point with a mean distance larger than global (mean distance+x*std_dev) will be considered outlier
+    outlier_filter.set_std_dev_mul_thresh(x)
+    
+    # Finally call the filter function
+    cloud_filtered = outlier_filter.filter()
+    ```
+    After executing the above code, we get an output as below.
+    ![statistical_filtering](./misc_images/sf.png)
 
-# Set the number of neighboring points to analyze for any given point
-outlier_filter.set_mean_k(10)
+- Voxel Grid Downsampling
+Processing large point clouds requires high computations. Inorder to solve this issue, the point cloud is downsampled retaining all the important informations.
+    ```py
+    # Create a VoxelGrid filter object for our input point cloud
+    vox = cloud_filtered.make_voxel_grid_filter()
 
-# Set threshold scale factor
-x = 0.5
+    # Choose a voxel (also known as leaf) size
+    LEAF_SIZE = 0.01   
 
-# Any point with a mean distance larger than global (mean distance+x*std_dev) will be considered outlier
-outlier_filter.set_std_dev_mul_thresh(x)
+    # Set the voxel (or leaf) size  
+    vox.set_leaf_size(LEAF_SIZE, LEAF_SIZE, LEAF_SIZE)
 
-# Finally call the filter function
-cloud_filtered = outlier_filter.filter()
-```
-After executing the above code, we get an output as below.
-![statistical_filtering](./misc_images/sf.png)
+    # Call the filter function to obtain the resultant downsampled point cloud
+    cloud_filtered = vox.filter()
+    ```
+    The following image shows the output of voxel grid downsampling.
+    ![voxel_grid](voxel_grid.png)
+    
+- Pass Through Filter
+The resultant point cloud contains many objects - such as the table, table stand, side boxes along with the objects that are to be picked. A pass through filter is used to slice the scene, so that only the objects of interest are present in the scene. The below code was used to slice the scene in Z axis and Y axis.
 
+    ```py
+    # Create a PassThrough filter object for removing outliers in z direction
+    passthrough = cloud_filtered.make_passthrough_filter()
+
+    # Assign axis and range to the passthrough filter object.
+    filter_axis = 'z'
+    passthrough.set_filter_field_name(filter_axis)
+    axis_min = 0.6
+    axis_max = 1.1
+    passthrough.set_filter_limits(axis_min, axis_max)
+
+    # Finally use the filter function to obtain the resultant point cloud. 
+    cloud_filtered = passthrough.filter()
+
+    #PassThrough Filter for removing outliers in y direction
+    # Create a PassThrough filter object.
+    passthrough = cloud_filtered.make_passthrough_filter()
+
+    # Assign axis and range to the passthrough filter object.
+    filter_axis = 'y'
+    passthrough.set_filter_field_name(filter_axis)
+    axis_min = -0.4
+    axis_max = 0.4
+    passthrough.set_filter_limits(axis_min, axis_max)
+
+    # Finally use the filter function to obtain the resultant point cloud. 
+    cloud_filtered = passthrough.filter()
+    ```
+    
+    The below image shows the outputt of this step.
+    ![passthrough](pass_filter.png)
+    
+- RANSAC plane segmentation
+The output after the previous step contained the plane table surface along with the objects of interest. Since, we have the model of the table surface plane, we can easily retrieve this area using RANSAC plane segmentation. Once, this is obtained, we can retrieve the object points which are just the points other than the table top points.
+
+    ```py
+    # Create the segmentation object
+    seg = cloud_filtered.make_segmenter()
+
+    # Set the model you wish to fit 
+    seg.set_model_type(pcl.SACMODEL_PLANE)
+    seg.set_method_type(pcl.SAC_RANSAC)
+
+    # Max distance for a point to be considered fitting the model
+    # Experiment with different values for max_distance 
+    # for segmenting the table
+    max_distance = 0.03
+    seg.set_distance_threshold(max_distance)
+
+    # Call the segment function to obtain set of inlier indices and model coefficients
+    inliers, coefficients = seg.segment()
+
+    # TODO: Extract inliers and outliers
+    cloud_table = cloud_filtered.extract(inliers, negative=False)
+    cloud_objects = cloud_filtered.extract(inliers, negative=True)
+    ```
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
 
 #### 2. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
