@@ -13,7 +13,7 @@ This project focuses on detecting and classiying objects on a table in front of 
 8. Submit a link to your GitHub repo for the project or the Python code for your perception pipeline and your output `.yaml` files (3 `.yaml` files, one for each test world).  You must have correctly identified 100% of objects from `pick_list_1.yaml` for `test1.world`, 80% of items from `pick_list_2.yaml` for `test2.world` and 75% of items from `pick_list_3.yaml` in `test3.world`.
 9. Congratulations!  Your Done!
 
-More steps on running the project can be found [here](Project_setup.md).
+More steps on running the project can be found [here](Project_setup.md). The main python file for this project can be found [here](./pr2_robot/scripts/project_run.py).
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/1067/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -105,7 +105,7 @@ The resultant point cloud contains many objects - such as the table, table stand
     ![passthrough](pass_filter.png)
     
 - RANSAC plane segmentation
-The output after the previous step contained the plane table surface along with the objects of interest. Since, we have the model of the table surface plane, we can easily retrieve this area using RANSAC plane segmentation. Once, this is obtained, we can retrieve the object points which are just the points other than the table top points.
+The output after the previous step contained the plane table surface along with the objects of interest. Since, we have the model of the table surface plane, we can easily retrieve this area using RANSAC plane segmentation. Once this is obtained, we can retrieve the object points which are just the points other than the table top points.
 
     ```py
     # Create the segmentation object
@@ -128,25 +128,123 @@ The output after the previous step contained the plane table surface along with 
     cloud_table = cloud_filtered.extract(inliers, negative=False)
     cloud_objects = cloud_filtered.extract(inliers, negative=True)
     ```
+    
+    The following images shows the table and the objects seperated out.
+    ![RANSAC table](ransac_table.png)
+    ![RANSAC objects](ransac_obj.png)
+    
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
+Now, we have the point cloud with objects alone in the scene. The next step involves seperating each objects out so that they can be individually passed to the object recognition pipeline. 
+
+Euclidiean clustering is used for this purpose. This step seperates the point cloud into different clusters, ie, different objects. This is done based on the distance between the different points and grouping them together.
+```py
+white_cloud = XYZRGB_to_XYZ(cloud_objects)
+tree = white_cloud.make_kdtree()
+
+# Create a cluster extraction object
+ec = white_cloud.make_EuclideanClusterExtraction()
+# Set tolerances for distance threshold 
+# as well as minimum and maximum cluster size (in points)
+ec.set_ClusterTolerance(0.05)
+ec.set_MinClusterSize(10)
+ec.set_MaxClusterSize(25000)
+# Search the k-d tree for clusters
+ec.set_SearchMethod(tree)
+# Extract indices for each of the discovered clusters
+cluster_indices = ec.Extract()
+```
+These different clusters are colored differently for visualising puposes.
+```py
+#Assign a color corresponding to each segmented object in scene
+cluster_color = get_color_list(len(cluster_indices))
+
+color_cluster_point_list = []
+
+for j, indices in enumerate(cluster_indices):
+    for i, indice in enumerate(indices):
+        color_cluster_point_list.append([white_cloud[indice][0],
+                                        white_cloud[indice][1],
+                                        white_cloud[indice][2],
+                                        rgb_to_float(cluster_color[j])])
+
+#Create new cloud containing all clusters, each with unique color
+cluster_cloud = pcl.PointCloud_PointXYZRGB()
+cluster_cloud.from_list(color_cluster_point_list)
+```
+
+The following image shows the clustered point cloud.
+![Clustered point cloud](cluster.png)
 
 #### 3. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
 Now, we have the segmented point cloud. The next task is to recognize which is which. This requires a model for object recognition. Since, each of the objects have unique shape and sizes, a simple machine learning algorithm such as Support Vector Machine(SVM) could be used.
 
 First step in object recognition using machine learning involves training a model. For the purpose of data collection for training, [capture_features.py](./sensor_stick/scripts/capture_features.py) is provided. Here, we can mention the list of items and number of samples of each and the program spawns each item in the mentioned number of random orientations and collects their features.
 
-The features collected are the color and normal of the objects. 
+The features collected are the color and normal of the objects. These are defined in the [features.py](./sensor_stick/src/sensor_stick/features.py) file. The `compute_color_histograms()` function takes in the cloud, converts it into HSV if required, calculates the histogram in each channel and concatenates them to form a feature. The `compute_normal_histograms()` function does the same with normals in the point cloud.
 
-![demo-1](https://user-images.githubusercontent.com/20687560/28748231-46b5b912-7467-11e7-8778-3095172b7b19.png)
+The training of the SVM is performed using [train_svm.py](./sensor_stick/scripts/train_svm.py) file. The SVM classfier is defined in Line 64-66 in this file.
+
+Various combinations of parameters were experimented and some of the models are available [here](./P2_svm_models). The best result was obtained by taking 10 random orienataion features with HSV color histograms. A linear SVM kernel was used to train the model and an accuracy of 96.25% was obtained. The confusion matrix after training is shown below.
+![Confusion Matrix](conf_matrix.png)
+
+This trained model was then saved as [`model.sav`](model.sav) file and was loaded in the `project_run.py`(./pr2_robot/scripts/project_run.py) file.
+```py
+model = pickle.load(open('model.sav', 'rb'))
+clf = model['classifier']
+encoder = LabelEncoder()
+encoder.classes_ = model['classes']
+scaler = model['scaler']
+```
+
+Once the point cloud is segmented, each cluster was taken, features were calculated and the model was called to find which object it was.
+
+```py
+# Classify the clusters! (loop through each detected cluster one at a time)
+detected_objects_labels = []
+detected_objects = []
+for index, pts_list in enumerate(cluster_indices):
+
+# Grab the points for the cluster
+pcl_cluster = cloud_objects.extract(pts_list)
+
+ # convert pcl to ros
+ros_cluster = pcl_to_ros(pcl_cluster)
+
+# Compute the associated feature vector
+chists = compute_color_histograms(ros_cluster, using_hsv=True)
+normals = get_normals(ros_cluster)
+nhists = compute_normal_histograms(normals)
+feature = np.concatenate((chists, nhists))
+
+# Make the prediction
+prediction = clf.predict(scaler.transform(feature.reshape(1,-1)))
+label = encoder.inverse_transform(prediction)[0]
+detected_objects_labels.append(label)
+
+# Publish a label into RViz
+label_pos = list(white_cloud[pts_list[0]])
+label_pos[2] += .4
+object_markers_pub.publish(make_label(label,label_pos, index))
+
+# Add the detected object to the list of detected objects.
+do = DetectedObject()
+do.label = label
+do.cloud = ros_cluster
+detected_objects.append(do)
+```
+
+The output was published as markers. The output is discussed in the next section.
 
 ### Pick and Place Setup
 
 #### 1. For all three tabletop setups (`test*.world`), perform object recognition, then read in respective pick list (`pick_list_*.yaml`). Next construct the messages that would comprise a valid `PickPlace` request output them to `.yaml` format.
 
-And here's another image! 
-![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
+The perception pipeline was run in the three tabletop setups and the output `PickPlace` request was stored in to `.yaml` format. The files - [output_1.yaml](./pr2_robot/config/output_1.yaml), [output_2.yaml](./pr2_robot/config/output_2.yaml) and [output_3.yaml](./pr2_robot/config/output_3.yaml) are present in the [config](./pr2_robot/config/) folder in the pr2_robot package.
 
-Spend some time at the end to discuss your code, what techniques you used, what worked and why, where the implementation might fail and how you might improve it if you were going to pursue this project further.  
+The output for each of the scenes is shown below.
+![Scene 1](out_1.png)
+![Scene 2](out_2.png)
+![Scene 3](out_3.png)
 
-
+As seen from the above image, all the objects across the tabletop scenes were identified accurately.
 

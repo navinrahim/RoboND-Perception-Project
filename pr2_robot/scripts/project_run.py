@@ -231,6 +231,7 @@ def pr2_mover(object_list):
     labels = []
     centroids = [] # to be list of tuples (x, y, z)
 
+    # Store labels and their centroids in lists
     for object in object_list:
         labels.append(object.label)
         points_arr = ros_to_pcl(object.cloud).to_array()
@@ -243,6 +244,7 @@ def pr2_mover(object_list):
     object_list_param = rospy.get_param('/object_list')
     drop_box_param = rospy.get_param('/dropbox')
 
+    # Get left and right box positions
     for i in range(len(drop_box_param)):
         if(drop_box_param[i]['name'] == 'left'):
             left_position = drop_box_param[i]['position']
@@ -254,10 +256,16 @@ def pr2_mover(object_list):
     # TODO: Loop through the pick list
     for i in range(len(object_list_param)):
 
+        # Get object name from pick list
         OBJECT_NAME.data = object_list_param[i]['name']
-        TEST_SCENE_NUM.data = 3
 
+        # Specify the test scene number
+        TEST_SCENE_NUM.data = 2
+
+        # Get index of object from stored list
         obj_idx = labels.index(object_list_param[i]['name'])
+
+        # Stop if object was not detected in the scene
         if(obj_idx == -1):
             rospy.loginfo('Object not detected')
             return
@@ -301,8 +309,8 @@ def pr2_mover(object_list):
             print "Service call failed: %s"%e
 
     # TODO: Output your request parameters into output yaml file
-    send_to_yaml('src/RoboND-Perception-Project/pr2_robot/config/output_3.yaml',dict_list)
-    print('yaml file saved')
+    # send_to_yaml('src/RoboND-Perception-Project/pr2_robot/config/output_3.yaml',dict_list)
+    # print('yaml file saved')
 
 
 
