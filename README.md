@@ -194,7 +194,7 @@ The training of the SVM is performed using [train_svm.py](./sensor_stick/scripts
 Various combinations of parameters were experimented and some of the models are available [here](./P2_svm_models). The best result was obtained by taking 10 random orienataion features with HSV color histograms. A linear SVM kernel was used to train the model and an accuracy of 96.25% was obtained. The confusion matrix after training is shown below.
 ![Confusion Matrix](./misc_images/conf_matrix.png)
 
-This trained model was then saved as [`model.sav`](model.sav) file and was loaded in the `project_run.py`(./pr2_robot/scripts/project_run.py) file.
+This trained model was then saved as [`model.sav`](model.sav) file and was loaded in the [project_run.py](./pr2_robot/scripts/project_run.py) file.
 ```py
 model = pickle.load(open('model.sav', 'rb'))
 clf = model['classifier']
