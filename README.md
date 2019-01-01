@@ -35,7 +35,7 @@ The various steps to achieve this is listed out below:
 
 - Statistical Outlier Filtering
 
-    This step involves removing the noise as much as possible from the environment. This filter looks in the neighborhoo and removes points that does not meet a certain criteria.
+    This step involves removing the noise as much as possible from the environment. This filter looks in the neighborhood and removes points that does not meet a certain criteria.
     ```py
     # creating a statistical outlier filter object for reducing noise
     outlier_filter = cloud.make_statistical_outlier_filter()
@@ -56,7 +56,8 @@ The various steps to achieve this is listed out below:
     ![statistical_filtering](./misc_images/sf.png)
 
 - Voxel Grid Downsampling
-Processing large point clouds requires high computations. Inorder to solve this issue, the point cloud is downsampled retaining all the important informations.
+
+    Processing large point clouds requires high computations. Inorder to solve this issue, the point cloud is downsampled retaining all the important informations.
     ```py
     # Create a VoxelGrid filter object for our input point cloud
     vox = cloud_filtered.make_voxel_grid_filter()
@@ -74,7 +75,8 @@ Processing large point clouds requires high computations. Inorder to solve this 
     ![voxel_grid](voxel_grid.png)
     
 - Pass Through Filter
-The resultant point cloud contains many objects - such as the table, table stand, side boxes along with the objects that are to be picked. A pass through filter is used to slice the scene, so that only the objects of interest are present in the scene. The below code was used to slice the scene in Z axis and Y axis.
+
+    The resultant point cloud contains many objects - such as the table, table stand, side boxes along with the objects that are to be picked. A pass through filter is used to slice the scene, so that only the objects of interest are present in the scene. The below code was used to slice the scene in Z axis and Y axis.
 
     ```py
     # Create a PassThrough filter object for removing outliers in z direction
@@ -109,7 +111,8 @@ The resultant point cloud contains many objects - such as the table, table stand
     ![passthrough](pass_filter.png)
     
 - RANSAC plane segmentation
-The output after the previous step contained the plane table surface along with the objects of interest. Since, we have the model of the table surface plane, we can easily retrieve this area using RANSAC plane segmentation. Once this is obtained, we can retrieve the object points which are just the points other than the table top points.
+
+    The output after the previous step contained the plane table surface along with the objects of interest. Since, we have the model of the table surface plane, we can easily retrieve this area using RANSAC plane segmentation. Once this is obtained, we can retrieve the object points which are just the points other than the table top points.
 
     ```py
     # Create the segmentation object
