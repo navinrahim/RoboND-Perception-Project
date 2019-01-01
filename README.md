@@ -72,7 +72,7 @@ The various steps to achieve this is listed out below:
     cloud_filtered = vox.filter()
     ```
     The following image shows the output of voxel grid downsampling.
-    ![voxel_grid](voxel_grid.png)
+    ![voxel_grid](./misc_images/voxel_grid.png)
     
 - Pass Through Filter
 
@@ -107,8 +107,8 @@ The various steps to achieve this is listed out below:
     cloud_filtered = passthrough.filter()
     ```
     
-    The below image shows the outputt of this step.
-    ![passthrough](pass_filter.png)
+    The below image shows the output of this step.
+    ![passthrough](./misc_images/pass_filter.png)
     
 - RANSAC plane segmentation
 
@@ -137,8 +137,8 @@ The various steps to achieve this is listed out below:
     ```
     
     The following images shows the table and the objects seperated out.
-    ![RANSAC table](ransac_table.png)
-    ![RANSAC objects](ransac_obj.png)
+    ![RANSAC table](./misc_images/ransac_table.png)
+    ![RANSAC objects](./misc_images/ransac_obj.png)
     
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
 Now, we have the point cloud with objects alone in the scene. The next step involves seperating each objects out so that they can be individually passed to the object recognition pipeline. 
@@ -180,7 +180,7 @@ cluster_cloud.from_list(color_cluster_point_list)
 ```
 
 The following image shows the clustered point cloud.
-![Clustered point cloud](cluster.png)
+![Clustered point cloud](./misc_images/cluster.png)
 
 #### 3. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
 Now, we have the segmented point cloud. The next task is to recognize which is which. This requires a model for object recognition. Since, each of the objects have unique shape and sizes, a simple machine learning algorithm such as Support Vector Machine(SVM) could be used.
@@ -192,7 +192,7 @@ The features collected are the color and normal of the objects. These are define
 The training of the SVM is performed using [train_svm.py](./sensor_stick/scripts/train_svm.py) file. The SVM classfier is defined in Line 64-66 in this file.
 
 Various combinations of parameters were experimented and some of the models are available [here](./P2_svm_models). The best result was obtained by taking 10 random orienataion features with HSV color histograms. A linear SVM kernel was used to train the model and an accuracy of 96.25% was obtained. The confusion matrix after training is shown below.
-![Confusion Matrix](conf_matrix.png)
+![Confusion Matrix](./misc_images/conf_matrix.png)
 
 This trained model was then saved as [`model.sav`](model.sav) file and was loaded in the `project_run.py`(./pr2_robot/scripts/project_run.py) file.
 ```py
@@ -249,9 +249,9 @@ The output was published as markers. The output is discussed in the next section
 The perception pipeline was run in the three tabletop setups and the output `PickPlace` request was stored in to `.yaml` format. The files - [output_1.yaml](./pr2_robot/config/output_1.yaml), [output_2.yaml](./pr2_robot/config/output_2.yaml) and [output_3.yaml](./pr2_robot/config/output_3.yaml) are present in the [config](./pr2_robot/config/) folder in the pr2_robot package.
 
 The output for each of the scenes is shown below.
-![Scene 1](out_1.png)
-![Scene 2](out_2.png)
-![Scene 3](out_3.png)
+![Scene 1](./misc_images/out_1.png)
+![Scene 2](./misc_images/out_2.png)
+![Scene 3](./misc_images/out_3.png)
 
 As seen from the above image, all the objects across the tabletop scenes were identified accurately.
 
