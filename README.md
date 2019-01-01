@@ -13,7 +13,7 @@ This project focuses on detecting and classiying objects on a table in front of 
 8. Submit a link to your GitHub repo for the project or the Python code for your perception pipeline and your output `.yaml` files (3 `.yaml` files, one for each test world).  You must have correctly identified 100% of objects from `pick_list_1.yaml` for `test1.world`, 80% of items from `pick_list_2.yaml` for `test2.world` and 75% of items from `pick_list_3.yaml` in `test3.world`.
 9. Congratulations!  Your Done!
 
-More steps on running the project can be found [here](Project_setup.md). The main python file for this project can be found [here](./pr2_robot/scripts/project_run.py).
+More steps on running the project can be found [here](./Project_Setup.md). The main python file for this project can be found [here](./pr2_robot/scripts/project_run.py).
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/1067/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -27,7 +27,9 @@ More steps on running the project can be found [here](Project_setup.md). The mai
 ### Exercise 1, 2 and 3 pipeline implemented
 #### 1. Complete Exercise 1 steps. Pipeline for filtering and RANSAC plane fitting implemented.
 The input to the perception pipeline is obtained from the `/pr2/world/points` topic. This topic contains the noisy point cloud obtained from the RGB-D camera placed on the PR2 robot.
+
 ![input_point_cloud](./misc_images/input.png)
+
 The first step in solving this project is to filter out all other points and obtain only the point cloud of the objects in the scene.
 The various steps to achieve this is listed out below:
 - Statistical Outlier Filtering
