@@ -32,8 +32,10 @@ The input to the perception pipeline is obtained from the `/pr2/world/points` to
 
 The first step in solving this project is to filter out all other points and obtain only the point cloud of the objects in the scene.
 The various steps to achieve this is listed out below:
+
 - Statistical Outlier Filtering
-This step involves removing the noise as much as possible from the environment. This filter looks in the neighborhoo and removes points that does not meet a certain criteria.
+
+    This step involves removing the noise as much as possible from the environment. This filter looks in the neighborhoo and removes points that does not meet a certain criteria.
     ```py
     # creating a statistical outlier filter object for reducing noise
     outlier_filter = cloud.make_statistical_outlier_filter()
