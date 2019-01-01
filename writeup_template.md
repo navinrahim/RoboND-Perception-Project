@@ -105,7 +105,7 @@ The resultant point cloud contains many objects - such as the table, table stand
     ![passthrough](pass_filter.png)
     
 - RANSAC plane segmentation
-The output after the previous step contained the plane table surface along with the objects of interest. Since, we have the model of the table surface plane, we can easily retrieve this area using RANSAC plane segmentation. Once, this is obtained, we can retrieve the object points which are just the points other than the table top points.
+The output after the previous step contained the plane table surface along with the objects of interest. Since, we have the model of the table surface plane, we can easily retrieve this area using RANSAC plane segmentation. Once this is obtained, we can retrieve the object points which are just the points other than the table top points.
 
     ```py
     # Create the segmentation object
@@ -128,10 +128,60 @@ The output after the previous step contained the plane table surface along with 
     cloud_table = cloud_filtered.extract(inliers, negative=False)
     cloud_objects = cloud_filtered.extract(inliers, negative=True)
     ```
+    
+    The following images shows the table and the objects seperated out.
+    ![RANSAC table](ransac_table.png)
+    ![RANSAC objects](ransac_obj.png)
+    
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
+Now, we have the point cloud with objects alone in the scene. The next step involves seperating each objects out so that they can be individually passed to the object recognition pipeline. The steps in this step are listed below.
+
+- Euclidean Clustering
+This step seperates the point cloud into different clusters, ie, different objects. This is done based on the distance between the different points and grouping them together.
+    ```py
+    white_cloud = XYZRGB_to_XYZ(cloud_objects)
+    tree = white_cloud.make_kdtree()
+
+    # Create a cluster extraction object
+    ec = white_cloud.make_EuclideanClusterExtraction()
+    # Set tolerances for distance threshold 
+    # as well as minimum and maximum cluster size (in points)
+    ec.set_ClusterTolerance(0.05)
+    ec.set_MinClusterSize(10)
+    ec.set_MaxClusterSize(25000)
+    # Search the k-d tree for clusters
+    ec.set_SearchMethod(tree)
+    # Extract indices for each of the discovered clusters
+    cluster_indices = ec.Extract()
+    ```
+    These different clusters are colored differently for visualising puposes.
+    ```py
+    #Assign a color corresponding to each segmented object in scene
+    cluster_color = get_color_list(len(cluster_indices))
+
+    color_cluster_point_list = []
+
+    for j, indices in enumerate(cluster_indices):
+        for i, indice in enumerate(indices):
+            color_cluster_point_list.append([white_cloud[indice][0],
+                                            white_cloud[indice][1],
+                                            white_cloud[indice][2],
+                                            rgb_to_float(cluster_color[j])])
+
+    #Create new cloud containing all clusters, each with unique color
+    cluster_cloud = pcl.PointCloud_PointXYZRGB()
+    cluster_cloud.from_list(color_cluster_point_list)
+    ```
+    
+    The following image shows the clustered point cloud.
+    ![Clustered point cloud](cluster.png)
 
 #### 2. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
-Here is an example of how to include an image in your writeup.
+Now, we have the segmented point cloud. The next task is to recognize which is which. This requires a model for object recognition. Since, each of the objects have unique shape and sizes, a simple machine learning algorithm such as Support Vector Machine(SVM) could be used.
+
+First step in object recognition using machine learning involves training a model. For the purpose of data collection for training, [capture_features.py](./sensor_stick/scripts/capture_features.py) is provided. Here, we can mention the list of items and number of samples of each and the program spawns each item in the mentioned number of random orientations and collects their features.
+
+The features collected are the color and normal of the objects. 
 
 ![demo-1](https://user-images.githubusercontent.com/20687560/28748231-46b5b912-7467-11e7-8778-3095172b7b19.png)
 
